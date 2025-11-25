@@ -1,0 +1,49 @@
+# Python / project ignores
+
+.env
+.venv/
+venv/
+**pycache**/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE/editor
+
+.vscode/
+.idea/
+
+# OS junk
+
+.DS_Store
+Thumbs.db
+
+# Build / distribution
+
+build/
+dist/
+*.egg-info/
+
+# Logs
+
+*.log
+
+# Notebook checkpoints (if you add notebooks)
+
+.ipynb_checkpoints/
+
+# Docker
+
+*.dockerignore
+docker-compose.override.yml
+
+# Sensitive or large files
+
+*.pem
+*.key
+*.sqlite3
+*.db
+
+# Optional: ignore local test artifacts
+
+tests/output/
