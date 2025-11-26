@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/playwright/python:latest
 WORKDIR /app
 
 # Copy requirements and install Python packages
-COPY requirements.txt .
+COPY Requirements.txt .
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
