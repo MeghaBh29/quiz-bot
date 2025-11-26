@@ -1,7 +1,6 @@
-# Use Playwright's official Python image which has browsers & deps preinstalled
+# Use Playwright's official Python image (browsers & deps preinstalled)
 FROM mcr.microsoft.com/playwright/python:latest
 
-# Create app dir
 WORKDIR /app
 
 # Copy requirements and install Python packages
@@ -10,14 +9,15 @@ COPY Requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r Requirements.txt
 
-# Copy application code
+# Copy app code
 COPY . .
 
-# Expose same port your app uses
-EXPOSE 10000
-
-# Ensure Playwright browsers path (optional)
+ENV PYTHONUNBUFFERED=1
+# Ensure Playwright uses the preinstalled browsers
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Run gunicorn (production WSGI)
-CMD ["gunicorn", "-b", "0.0.0.0:10000", "app:app", "--workers", "2", "--threads", "4"]
+# Expose a default port (not required but useful)
+EXPOSE 10000
+
+# Use PORT env var provided by Render; fallback to 10000 if not set
+CMD ["sh", "-lc", "gunicorn -b 0.0.0.0:${PORT:-10000} app:app --workers 2 --threads 4 --log-level info"]
