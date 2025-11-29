@@ -8,6 +8,79 @@ from urllib.parse import urljoin
 from solver.browser import fetch_rendered_page
 from solver.parser_pdf import parse_pdf_sum_if_requested
 from solver.parser_tabular import parse_csv_sum_if_requested, parse_excel_sum_if_requested
+# --- add these helper functions to solver/analysis.py ---
+
+import re
+import requests
+from urllib.parse import urljoin
+
+def find_submit_url(text_or_html: str):
+    """
+    Look for a submit endpoint in the HTML/text.
+    Common patterns: https://.../submit or /submit endpoints.
+    Returns full URL string or None.
+    """
+    if not text_or_html:
+        return None
+    # try common absolute submit endpoints first
+    m = re.search(r'https?://[^\s"\'<>]*?/submit[^\s"\'<>]*', text_or_html, re.IGNORECASE)
+    if m:
+        return m.group(0)
+    # try relative /submit paths inside href attributes or text
+    m = re.search(r'href=["\'](/[^"\']*?/submit[^"\']*)["\']', text_or_html, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    # fallback: any path that ends with /submit
+    m = re.search(r'(["\'])(/[^"\']*?/submit[^"\']*)\1', text_or_html, re.IGNORECASE)
+    if m:
+        return m.group(2)
+    return None
+
+def find_file_link(html: str, base_url: str):
+    """
+    Heuristic to find a downloadable file (pdf/csv/xlsx) link in HTML/text.
+    Returns absolute URL or None.
+    """
+    if not html:
+        return None
+
+    # 1) absolute hrefs
+    m = re.search(r'href=["\'](https?://[^"\']+\.(?:pdf|csv|xlsx|xls))["\']', html, re.IGNORECASE)
+    if m:
+        return m.group(1)
+
+    # 2) relative hrefs (convert to absolute)
+    m = re.search(r'href=["\'](/[^"\']+\.(?:pdf|csv|xlsx|xls))["\']', html, re.IGNORECASE)
+    if m and base_url:
+        return urljoin(base_url, m.group(1))
+
+    # 3) raw URLs in text
+    m = re.search(r'(https?://[^\s"\'<>]+?\.(?:pdf|csv|xlsx|xls))', html, re.IGNORECASE)
+    if m:
+        return m.group(1)
+
+    # 4) lazy-loaded links (data-href, data-src)
+    m = re.search(r'(data-(?:href|src)=["\'](https?://[^\s"\'<>]+?\.(?:pdf|csv|xlsx|xls))["\'])', html, re.IGNORECASE)
+    if m:
+        return re.search(r'https?://[^\s"\'<>]+?\.(?:pdf|csv|xlsx|xls)', m[0], re.IGNORECASE).group(0)
+
+    return None
+
+def download_file(url: str, timeout: int = 30):
+    """
+    Download a file (bytes) with a timeout. Returns bytes or None.
+    """
+    if not url:
+        return None
+    try:
+        r = requests.get(url, timeout=timeout)
+        if r.status_code == 200:
+            return r.content
+    except Exception:
+        return None
+    return None
+
+# --- end helper functions ---
 
 # Use env defaults if present
 MAX_TOTAL_SECONDS = int(os.environ.get("BROWSER_TIMEOUT", "180"))
